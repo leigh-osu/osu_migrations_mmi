@@ -1,0 +1,8 @@
+{
+    "name": "leigh-osu/osu_migrations_mmi",
+    "description": "Marine Mammal Institute D7 to D10 migration for OSU CAS (second input into the live install)",
+    "type": "drupal-custom-module",
+    "require": {
+        "php": ">=8.1"
+    }
+}

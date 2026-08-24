@@ -1,0 +1,14 @@
+langcode: en
+status: true
+id: mmi_media
+label: 'MMI Media'
+description: 'Marine Mammal Institute file and media migrations. Distinct mmi_* migration ids give these their own map tables, so 750 MMI fids that also exist as agsci source keys can never resolve to somebody else''s picture. No id offset needed: files and media do not preserve D7 ids.'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi

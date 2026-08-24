@@ -1,0 +1,14 @@
+langcode: en
+status: true
+id: mmi_groups
+label: 'MMI Groups'
+description: 'Marine Mammal Institute OG-to-Group migrations: 15 basic_groups (14 labs plus Main) under the single mmi_oregonstate_edu domain.'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi

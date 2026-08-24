@@ -1,0 +1,68 @@
+langcode: en
+status: true
+id: mmi_content
+label: 'MMI Nodes'
+description: 'Marine Mammal Institute node migrations. Second input into the live install: own migrate_mmi connection, node/revision ids offset by +400000 (see MmiNidOffset).'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  # Every migration in this group reads the MMI D7 database, never the agsci
+  # one. A member migration must not carry its own source key.
+  source:
+    key: migrate_mmi
+  process:
+    # Cloned from migrate_plus.migration_group.content (the agsci group),
+    # which preserves D7 ids verbatim. MMI cannot: 116 of its nids already
+    # exist as live D10 nodes, so nid and vid go through the fixed offset.
+    nid:
+      - plugin: get
+        source: nid
+      - plugin: mmi_nid_offset
+    vid:
+      - plugin: get
+        source: vid
+      - plugin: mmi_nid_offset
+    type: type
+    langcode:
+      # A handful of D7 nodes carry language = '' rather than und or en.
+      # static_map with bypass passes those through unchanged, leaving the node
+      # with an empty langcode that matches none of its field rows (written as
+      # en), so every field on it silently loads empty. default_value is not
+      # strict, so it treats '' as falsy and substitutes en while leaving real
+      # language codes untouched.
+      - plugin: static_map
+        bypass: true
+        source: language
+        map:
+          und: en
+      - plugin: default_value
+        default_value: en
+    title: title
+    # Never the raw D7 uid: 39 MMI uids belong to a different person on the
+    # live site. mmi_users matches accounts by ONID username and this lookup
+    # resolves authorship through its map. It hard-fails (no_stub, no default)
+    # until mmi_users has run -- content migrations MUST come after user
+    # reconciliation, and a silent fallback to uid 1 would hide a broken map.
+    uid:
+      - plugin: migration_lookup
+        migration: mmi_users
+        source: node_uid
+        no_stub: true
+    status: status
+    created: created
+    changed: changed
+    promote: promote
+    sticky: sticky
+    revision_uid:
+      - plugin: migration_lookup
+        migration: mmi_users
+        source: revision_uid
+        no_stub: true
+    revision_log: log
+    revision_timestamp: timestamp
+  destination:
+    plugin: 'entity:node'
