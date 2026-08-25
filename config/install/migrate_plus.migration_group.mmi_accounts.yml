@@ -1,0 +1,14 @@
+langcode: en
+status: true
+id: mmi_accounts
+label: 'MMI Accounts'
+description: 'Marine Mammal Institute user reconciliation. Runs before any content: 16 accounts adopt their existing D10 user by ONID (map rows pre-seeded with ROLLBACK_PRESERVE by scripts-dev/mmi_preseed_user_map.php), the rest are created with new uids -- MMI D7 uids are never preserved.'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi

@@ -1,0 +1,50 @@
+langcode: en
+status: true
+id: mmi_users
+label: 'MMI user accounts (referenced by content, not ONID-adopted)'
+migration_group: mmi_accounts
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Accounts'
+source:
+  plugin: mmi_d7_user_referenced
+process:
+  # No uid mapping: MMI uids are never preserved (39 of them belong to a
+  # different person on the live site). New accounts get fresh uids; the
+  # ONID-adopted accounts are handled by pre-seeded map rows and never reach
+  # the destination at all.
+  name: name
+  pass: pass
+  mail: mail
+  created: created
+  access: access
+  login: login
+  status: status
+  timezone: timezone
+  langcode:
+    plugin: user_langcode
+    source: language
+    fallback_to_site_default: false
+  preferred_langcode:
+    plugin: user_langcode
+    source: language
+    fallback_to_site_default: true
+  preferred_admin_langcode:
+    plugin: user_langcode
+    source: language
+    fallback_to_site_default: true
+  init: init
+  roles:
+    plugin: mmi_user_role_map
+    source: roles
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+destination:
+  plugin: 'entity:user'
