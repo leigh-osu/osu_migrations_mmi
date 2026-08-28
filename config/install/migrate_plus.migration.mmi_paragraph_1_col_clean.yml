@@ -1,0 +1,41 @@
+langcode: en
+status: true
+id: mmi_paragraph_1_col_clean
+label: 'MMI paragraph_1_col_clean -> LB block'
+migration_group: mmi_paragraphs
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Paragraphs'
+source:
+  plugin: osu_d7_paragraphs_item
+  bundle: paragraph_1_col_clean
+process:
+  type:
+    plugin: default_value
+    default_value: paragraph_block
+  body:
+    - plugin: sub_process
+      source: field_p_1_col_clean_main
+      process:
+        value:
+          plugin: mmi_media_wysiwyg_filter
+          source: value
+        format:
+          plugin: default_value
+          default_value: full_html
+  field_styles: field_p_1_col_clean_margin
+  info:
+    plugin: default_value
+    default_value: 'Migrated mmi d7 paragraph paragraph_1_col_clean'
+  reusable:
+    plugin: default_value
+    default_value: 0
+migration_dependencies:
+  required:
+    - mmi_media_images

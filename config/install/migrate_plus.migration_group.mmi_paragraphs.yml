@@ -1,0 +1,16 @@
+langcode: en
+status: true
+id: mmi_paragraphs
+label: 'MMI Paragraphs'
+description: 'MMI D7 paragraphs -> Layout Builder block_content, cloned from the agsci paragraphs_to_layout_builder pipeline over the migrate_mmi source. The page/book node migrations assemble their layouts from these maps (mmi_paragraphs_layout).'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi
+  destination:
+    plugin: 'entity:block_content'

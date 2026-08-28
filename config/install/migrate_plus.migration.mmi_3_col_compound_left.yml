@@ -1,0 +1,54 @@
+langcode: en
+status: true
+id: mmi_3_col_compound_left
+label: 'MMI 3_col_compound left text column -> LB block'
+migration_group: mmi_paragraphs
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Paragraphs'
+
+# The compound bundles pair per-column rich text with embedded D7 views.
+# The views are not migrated (mmi_paragraphs_layout leaves the section in
+# place for the post-section-9 backfill); a column whose text is empty is
+# view-only and produces no block at all.
+source:
+  plugin: osu_d7_paragraphs_item
+  bundle: 3_col_compound
+process:
+  type:
+    plugin: default_value
+    default_value: paragraph_block
+  _text:
+    - plugin: extract
+      source: field_3col_left_text
+      index:
+        - 0
+        - value
+      default: ''
+    - plugin: callback
+      callable: trim
+    - plugin: skip_on_empty
+      method: row
+      message: 'compound column is view-only or empty'
+  body/value:
+    - plugin: get
+      source: '@_text'
+    - plugin: mmi_media_wysiwyg_filter
+  body/format:
+    - plugin: default_value
+      default_value: full_html
+  info:
+    plugin: default_value
+    default_value: 'Migrated mmi d7 paragraph 3_col_compound'
+  reusable:
+    plugin: default_value
+    default_value: 0
+migration_dependencies:
+  required:
+    - mmi_media_images

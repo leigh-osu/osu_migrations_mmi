@@ -1,0 +1,138 @@
+langcode: en
+status: true
+id: mmi_book
+label: 'MMI book pages -> Page'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Runs AFTER the mmi_paragraphs group: the layout assembles from those
+# migrations' maps (mmi_paragraphs_layout). 183 book nodes (10 members-only), 234 paragraph items.
+# nid offset, langcode repair, uid resolution and the migrate_mmi key come
+# from the mmi_content group.
+source:
+  plugin: d7_node
+  node_type: book
+  high_water_property:
+    name: changed
+
+  constants:
+    # Paragraph bundle (or bundle column) -> the mmi migration whose map
+    # holds its block. view / divider / navigation_grid_paragraph /
+    # expedition are handled inside mmi_paragraphs_layout without a map
+    # entry.
+    map:
+      paragraph_1_col: mmi_paragraph_1_col
+      paragraph_1_col_clean: mmi_paragraph_1_col_clean
+      paragraph_2_col_left: mmi_paragraph_2_col_left
+      paragraph_2_col_right: mmi_paragraph_2_col_right
+      paragraph_3_col_left: mmi_paragraph_3_col_left
+      paragraph_3_col_center: mmi_paragraph_3_col_center
+      paragraph_3_col_right: mmi_paragraph_3_col_right
+      paragraph_accordion: mmi_paragraph_accordion
+      paragraph_menu: mmi_paragraph_menu
+      2_col_compound_left: mmi_2_col_compound_left
+      2_col_compound_right: mmi_2_col_compound_right
+      3_col_compound_left: mmi_3_col_compound_left
+      3_col_compound_mid: mmi_3_col_compound_mid
+      3_col_compound_right: mmi_3_col_compound_right
+
+process:
+  type:
+    plugin: default_value
+    default_value: page
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
+  # OG content visibility: 10 of 183 books are members-only in D7.
+  field_group_private:
+    - plugin: extract
+      source: group_content_access
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        2: 1
+      default_value: 0
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  default_temp:
+    plugin: default_layout
+    bundle: page
+  paragraphs_temp:
+    plugin: mmi_paragraphs_layout
+    source_field: field_paragraph
+  layout_builder__layout:
+    plugin: get
+    source:
+      # Default section (body) first: D7 rendered body above the paragraph
+      # sections (body weight 1, field_paragraph weight 2+).
+      - '@default_temp'
+      - '@paragraphs_temp'
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: page
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_images
+  optional:
+    - mmi_media_documents
+    - mmi_media_local_video
+    - mmi_media_remote_video
+    - mmi_media_kaltura
+    # Ordering-only deps (same phantom-unprocessed-rows caveat as the agsci
+    # run: raw paragraphs_item counts vs what the source yields keep
+    # allRowsProcessed() from ever being true, so these stay optional).
+    - mmi_paragraph_1_col
+    - mmi_paragraph_1_col_clean
+    - mmi_paragraph_2_col_left
+    - mmi_paragraph_2_col_right
+    - mmi_paragraph_3_col_left
+    - mmi_paragraph_3_col_center
+    - mmi_paragraph_3_col_right
+    - mmi_paragraph_accordion
+    - mmi_paragraph_menu
+    - mmi_2_col_compound_left
+    - mmi_2_col_compound_right
+    - mmi_3_col_compound_left
+    - mmi_3_col_compound_mid
+    - mmi_3_col_compound_right

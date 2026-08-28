@@ -1,0 +1,36 @@
+langcode: en
+status: true
+id: mmi_paragraph_menu
+label: 'MMI paragraph_menu -> LB menu bar'
+migration_group: mmi_paragraphs
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Paragraphs'
+source:
+  plugin: osu_d7_paragraphs_item
+  bundle: paragraph_menu
+process:
+  type:
+    plugin: default_value
+    default_value: paragraph_block
+  # mmi_menu_item builds one osu_menu_bar_item block per link (130 across
+  # MMI) over migrate_mmi and stores the child block ids in this container's
+  # body; mmi_paragraphs_layout expands them into the section at layout time.
+  body:
+    plugin: mmi_menu_item
+    source: field_p_menu
+  field_styles: field_p_menu_styles
+  info:
+    plugin: default_value
+    default_value: 'Migrated mmi d7 paragraph paragraph_menu'
+  reusable:
+    plugin: default_value
+    default_value: 0
+migration_dependencies:
+  required: {  }

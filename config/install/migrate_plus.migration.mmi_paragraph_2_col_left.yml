@@ -1,0 +1,47 @@
+langcode: en
+status: true
+id: mmi_paragraph_2_col_left
+label: 'MMI paragraph_2_col left column -> LB block'
+migration_group: mmi_paragraphs
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Paragraphs'
+source:
+  plugin: osu_d7_paragraphs_item
+  bundle: paragraph_2_col
+process:
+  type:
+    plugin: default_value
+    default_value: paragraph_block
+  body:
+    - plugin: sub_process
+      source: field_p_2_col_left_main
+      process:
+        value:
+          plugin: mmi_media_wysiwyg_filter
+          source: value
+        format:
+          plugin: default_value
+          default_value: full_html
+  field_eb_background_fc:
+    plugin: file_background
+    source: field_p_2_col_left_bg
+    custom_source_lookup: mmi_media_images
+  field_styles:
+    plugin: class_list
+    source: field_p_2_col_styles
+  info:
+    plugin: default_value
+    default_value: 'Migrated mmi d7 paragraph paragraph_2_col'
+  reusable:
+    plugin: default_value
+    default_value: 0
+migration_dependencies:
+  required:
+    - mmi_media_images

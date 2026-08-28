@@ -1,0 +1,39 @@
+langcode: en
+status: true
+id: mmi_paragraph_accordion
+label: 'MMI paragraph_accordion -> LB accordion block'
+migration_group: mmi_paragraphs
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Paragraphs'
+source:
+  plugin: osu_d7_paragraphs_item
+  bundle: paragraph_accordion
+process:
+  type:
+    plugin: default_value
+    default_value: osu_accordion
+  # mmi_accordion_item reads the 168 accordion-group collections over
+  # migrate_mmi, resolves media tokens through the MMI maps, and repairs
+  # legacy /sites/mmi7|mmi/files/ urls.
+  field_osu_paragraph_item:
+    plugin: mmi_accordion_item
+    source:
+      - field_p_accordion_header
+      - field_p_accordion_group
+  field_p_accordion_heading: field_p_accordion_header
+  info:
+    plugin: default_value
+    default_value: 'Migrated mmi d7 paragraph paragraph_accordion'
+  reusable:
+    plugin: default_value
+    default_value: 0
+migration_dependencies:
+  required:
+    - mmi_media_images
