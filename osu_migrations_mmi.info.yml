@@ -3,9 +3,10 @@ type: module
 description: Second-input migration of the Marine Mammal Institute D7 site into the live CAS D10 install. Own migrate_mmi connection, mmi_* migration namespace, +400000 nid offset.
 package: OSU Migrations - Sites
 core_version_requirement: ^10 || ^11
-version: 0.2.0
+version: 0.3.0
 
 dependencies:
+  - osu_migrations:osu_migrations
   - drupal:migrate
   - migrate_plus:migrate_plus
   - migrate_tools:migrate_tools

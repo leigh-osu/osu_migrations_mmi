@@ -1,0 +1,6 @@
+services:
+  osu_migrations_mmi.media_embed:
+    class: Drupal\osu_migrations_mmi\MmiMediaEmbed
+    arguments:
+      - '@migrate.lookup'
+      - '@entity_type.manager'

@@ -1,0 +1,168 @@
+langcode: en
+status: true
+id: mmi_research_project
+label: 'MMI research projects'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# nid/vid offset, langcode repair, uid/revision_uid resolution through
+# mmi_users (no_stub) and the migrate_mmi source key all come from the
+# mmi_content group shared configuration.
+source:
+  plugin: d7_node
+  node_type: research_project
+  high_water_property:
+    name: changed
+
+process:
+  # D7 labels the body "Summary". Media tokens ([[{...}]]) resolve through
+  # the mmi_* media maps -- 30 bodies and 24 section values carry them.
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_sub_title:
+    plugin: get
+    source: field_project_sub_title
+
+  field_res_proj_background:
+    plugin: sub_process
+    source: field_project_background
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_concept:
+    plugin: sub_process
+    source: field_project_concept
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_objectives:
+    plugin: sub_process
+    source: field_project_objectives
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_hypotheses:
+    plugin: sub_process
+    source: field_project_hypotheses
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_update:
+    plugin: sub_process
+    source: field_project_update
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_res_proj_literature:
+    plugin: sub_process
+    source: field_project_literature
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  # D7 image -> D10 media reference through the MMI media map.
+  field_res_proj_thumbnail:
+    plugin: sub_process
+    source: field_project_thumbnail
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration: mmi_media_images
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: process
+
+  field_res_proj_completed:
+    - plugin: extract
+      source: field_completed
+      index:
+        - 0
+        - value
+      default: 0
+
+  # OG content visibility: 2 = private in D7 og_access; 0 (group default)
+  # and 1 (public) both land public. Only 2 of 61 projects are private.
+  field_group_private:
+    - plugin: extract
+      source: group_content_access
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        2: 1
+      default_value: 0
+
+  # Aliases are migrated by the offset alias pipeline, not pathauto.
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  # Single-domain site: every node carries the mmi domain constant.
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: research_project
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_images
