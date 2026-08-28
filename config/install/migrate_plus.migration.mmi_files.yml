@@ -1,0 +1,64 @@
+langcode: en
+status: true
+id: mmi_files
+label: 'MMI public files'
+migration_group: mmi_media
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Media'
+
+# No fid mapping on purpose: destination files take fresh fids. MMI D7 fids
+# collide with agsci fids, and files never preserved D7 ids anyway; the
+# mmi_files map table is the only bridge.
+source:
+  plugin: d7_file
+  scheme: public
+  constants:
+    # The agscid7 docroot is mounted read-only at /var/www/d7 in the web
+    # container (.ddev/docker-compose.d7files.yaml). The mmi D7 site's
+    # file_public_path variable (sites/mmi7/files) supplies the rest.
+    source_base_path: '/var/www/d7'
+
+process:
+  filename: filename
+  source_full_path:
+    - plugin: concat
+      delimiter: /
+      source:
+        - constants/source_base_path
+        - filepath
+    - plugin: urlencode
+  # D7 uris are kept verbatim: none of the 6,918 MMI public uris exist on
+  # the live site (checked 2026-08-28), so nothing can be overwritten.
+  uri:
+    plugin: file_copy
+    source:
+      - '@source_full_path'
+      - uri
+  filemime: filemime
+  status: status
+  created: timestamp
+  changed: timestamp
+  # File ownership is cosmetic: most uploader accounts are not referenced by
+  # content, so they are not in the mmi_users map. Fall back to uid 1 rather
+  # than hard-failing the file row.
+  uid:
+    - plugin: migration_lookup
+      migration: mmi_users
+      source: uid
+      no_stub: true
+    - plugin: default_value
+      default_value: 1
+
+destination:
+  plugin: 'entity:file'
+
+migration_dependencies:
+  required:
+    - mmi_users

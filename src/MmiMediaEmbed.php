@@ -16,15 +16,16 @@ class MmiMediaEmbed extends OsuMediaEmbed {
   /**
    * {@inheritdoc}
    *
-   * MMI research_project texts embed images and a few videos; documents are
-   * included for the remaining node types. Adjust alongside the section-5
-   * media migrations if their ids change.
+   * The five mmi media migrations; MMI has no private-scheme media (its only
+   * private files are webform submission uploads, which do not migrate).
    */
   protected function getMediaMigrations(): array {
     return [
       'mmi_media_images',
       'mmi_media_documents',
-      'mmi_media_video',
+      'mmi_media_local_video',
+      'mmi_media_remote_video',
+      'mmi_media_kaltura',
     ];
   }
 
