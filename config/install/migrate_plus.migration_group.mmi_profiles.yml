@@ -1,0 +1,14 @@
+langcode: en
+status: true
+id: mmi_profiles
+label: 'MMI Profiles'
+description: 'Marine Mammal Institute people: one osu_profile node per profiled D7 user (all 101, whether or not the account itself migrates), then per-profile2-type field layers, mirroring the agsci user-to-profiles pipeline. Runs after users, terms and media. Roles (functional_group) deliberately do NOT land on the profile node -- they become typed lab memberships via mmi_membership_terms in the groups section.'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi

@@ -1,0 +1,172 @@
+langcode: en
+status: true
+id: mmi_profile_faculty
+label: 'MMI profiles: osu_faculty fields'
+migration_group: mmi_profiles
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Profiles'
+
+# MMI faculty carry credentials (116 values, all within the D10 255-char
+# limit) and three CVs, which agsci never mapped; specialty summary, grad
+# students and lab group have no MMI source fields and are absent here.
+source:
+  plugin: d7_osu_profile2
+  profile2_type: osu_faculty
+
+process:
+  nid:
+    - plugin: migration_lookup
+      migration: mmi_profiles
+      source: uid
+      no_stub: true
+    - plugin: skip_on_empty
+      method: row
+
+  # D7 list keys preserved (01 = Faculty, 03 = GRA).
+  field_profile_fac_type: rank
+
+  field_profile_credentials: credentials
+
+  field_profile_curriculum_vitae:
+    plugin: sub_process
+    source: curriculum_vitae
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration: mmi_media_documents
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: row
+
+  field_profile_fac_career_int:
+    plugin: sub_process
+    source: career_interests
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_education:
+    plugin: sub_process
+    source: osu_faculty_education
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_courses:
+    plugin: sub_process
+    source: osu_faculty_courses_taught
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_awards:
+    plugin: sub_process
+    source: osu_faculty_honors_and_awards
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_additional:
+    plugin: sub_process
+    source: osu_faculty_additional_info
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_employment:
+    plugin: sub_process
+    source: osu_faculty_employment
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_affiliations:
+    plugin: sub_process
+    source: osu_faculty_affiliations
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_service:
+    plugin: sub_process
+    source: osu_faculty_service
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_profile_fac_presentations:
+    plugin: sub_process
+    source: osu_faculty_presentations
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_profile_fac_career_links:
+    plugin: sub_process
+    source: career_links
+    process:
+      uri: url
+      title: title
+
+  type:
+    plugin: default_value
+    default_value: osu_profile
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: osu_profile
+  overwrite_properties:
+    - field_profile_fac_type
+    - field_profile_credentials
+    - field_profile_curriculum_vitae
+    - field_profile_fac_career_int
+    - field_profile_fac_education
+    - field_profile_fac_courses
+    - field_profile_fac_awards
+    - field_profile_fac_additional
+    - field_profile_fac_employment
+    - field_profile_fac_affiliations
+    - field_profile_fac_service
+    - field_profile_fac_presentations
+    - field_profile_fac_career_links
+
+migration_dependencies:
+  required:
+    - mmi_profiles
+    - mmi_media_documents

@@ -1,0 +1,45 @@
+langcode: en
+status: true
+id: mmi_membership_terms
+label: 'MMI people roles -> membership_types terms'
+migration_group: mmi_accounts
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Accounts'
+
+# MMI's functional_groups vocabulary holds people roles (Principal
+# Investigator, Ph.D. Student, ...). Its D10 analog is a typed group
+# membership, so the terms land in the shared membership_types vocabulary --
+# NOT in D10 functional_groups, which despite the name holds agsci org
+# groupings (1/22 name overlap vs 7 exact matches in membership_types).
+#
+# Term-mapping table approved 2026-08-28: the 7 exact name matches adopt the
+# live terms (pre-seeded ROLLBACK_PRESERVE map rows, see
+# scripts-dev/mmi_preseed_term_map.php), the 10 remaining referenced terms
+# are created verbatim so the D7 people-page headings survive unchanged, and
+# the 5 unreferenced terms are filtered out by the source plugin.
+source:
+  plugin: mmi_d7_term_referenced
+  bundle: functional_groups
+  reference_field: functional_group
+
+process:
+  # Fresh tids; the map table is the only bridge (MMI tids collide with live
+  # tids, same as every other MMI id space).
+  name: name
+  description/value: description
+  description/format:
+    plugin: default_value
+    default_value: basic_html
+  weight: weight
+  # functional_groups is flat; no parent mapping.
+
+destination:
+  plugin: 'entity:taxonomy_term'
+  default_bundle: membership_types

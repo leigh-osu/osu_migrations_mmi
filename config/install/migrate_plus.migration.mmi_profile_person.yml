@@ -1,0 +1,162 @@
+langcode: en
+status: true
+id: mmi_profile_person
+label: 'MMI profiles: osu_person fields'
+migration_group: mmi_profiles
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Profiles'
+
+# Names, biography, image, display email and the link farm. Merges what
+# agsci split across upgrade_d7_user_profile_osu_person and
+# cas_user_profile_osu_person. The two viewfields (image gallery, person
+# publications) are display plumbing the D10 profile provides natively and
+# are not data to migrate.
+source:
+  plugin: d7_osu_profile2
+  profile2_type: osu_person
+
+process:
+  nid:
+    - plugin: migration_lookup
+      migration: mmi_profiles
+      source: uid
+      no_stub: true
+    - plugin: skip_on_empty
+      method: row
+      message: 'No migrated profile node for this D7 uid; skipping orphaned profile2 row.'
+
+  field_profile_first_name: first_name
+  field_profile_middle_name: middle_name
+  field_profile_last_name: last_name
+  field_profile_preferred_name: preferred_name
+  field_profile_pronouns: field_person_pronouns
+  field_profile_name_suffix:
+    - plugin: static_map
+      source: suffix_name/0/value
+      map:
+        '01': Sr.
+        '02': Jr.
+        '03': I
+        '04': II
+        '05': III
+      default_value: ''
+
+  # The profile-level display email wins over the account mail the base
+  # migration stamped; empty profile emails leave the account value alone.
+  field_profile_email:
+    - plugin: callback
+      callable: trim
+      source: email/0/email
+    - plugin: skip_on_empty
+      method: process
+
+  field_profile_biography:
+    plugin: sub_process
+    source: biography
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_profile_image:
+    plugin: sub_process
+    source: image
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration: mmi_files
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: row
+      alt:
+        plugin: default_value
+        source: alt
+        default_value: 'Profile headshot'
+
+  field_profile_personal_interests:
+    plugin: sub_process
+    source: personal_interests
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_profile_personal_links:
+    plugin: sub_process
+    source: personal_links
+    process:
+      uri: url
+      title: title
+  field_profile_google_scholar:
+    plugin: sub_process
+    source: field_google_scholar
+    process:
+      uri: url
+      title: title
+  field_profile_researchgate:
+    plugin: sub_process
+    source: field_researchgate
+    process:
+      uri: url
+      title: title
+  field_profile_pub_med:
+    plugin: sub_process
+    source: field_pub_med
+    process:
+      uri: url
+      title: title
+  field_profile_pubs_website:
+    plugin: sub_process
+    source: field_pubs_website
+    process:
+      uri: url
+      title: title
+
+  # "Show this report" flags (D7 list_integer value 1 -> D10 boolean).
+  field_profile_dm_pubs: field_person_dm_publications
+  field_profile_dm_awards: field_person_dm_awards
+
+  type:
+    plugin: default_value
+    default_value: osu_profile
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: osu_profile
+  overwrite_properties:
+    - field_profile_first_name
+    - field_profile_middle_name
+    - field_profile_last_name
+    - field_profile_preferred_name
+    - field_profile_pronouns
+    - field_profile_name_suffix
+    - field_profile_email
+    - field_profile_biography
+    - field_profile_image
+    - field_profile_personal_interests
+    - field_profile_personal_links
+    - field_profile_google_scholar
+    - field_profile_researchgate
+    - field_profile_pub_med
+    - field_profile_pubs_website
+    - field_profile_dm_pubs
+    - field_profile_dm_awards
+
+migration_dependencies:
+  required:
+    - mmi_profiles
+    - mmi_files

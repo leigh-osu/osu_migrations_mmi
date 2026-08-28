@@ -1,0 +1,57 @@
+langcode: en
+status: true
+id: mmi_profile_student
+label: 'MMI profiles: osu_student fields'
+migration_group: mmi_profiles
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Profiles'
+
+# MMI students carry only majors and academic interests; there is no
+# major-professor reference field in the MMI profile suite.
+source:
+  plugin: d7_osu_profile2
+  profile2_type: osu_student
+
+process:
+  nid:
+    - plugin: migration_lookup
+      migration: mmi_profiles
+      source: uid
+      no_stub: true
+    - plugin: skip_on_empty
+      method: row
+
+  field_profile_stu_majors: majors
+
+  field_profile_stu_ac_interests:
+    plugin: sub_process
+    source: academic_interests
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  type:
+    plugin: default_value
+    default_value: osu_profile
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: osu_profile
+  overwrite_properties:
+    - field_profile_stu_majors
+    - field_profile_stu_ac_interests
+
+migration_dependencies:
+  required:
+    - mmi_profiles

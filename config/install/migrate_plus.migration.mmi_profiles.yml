@@ -1,0 +1,54 @@
+langcode: en
+status: true
+id: mmi_profiles
+label: 'MMI profiles: base osu_profile node per profiled user'
+migration_group: mmi_profiles
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Profiles'
+
+# Map keyed on the D7 uid; the per-type layers and the (future) major-
+# professor style references resolve through it. Fresh nids -- profile2 rows
+# never had nids, so the +400000 offset does not apply here.
+source:
+  plugin: mmi_d7_user_profiled
+
+process:
+  title: name
+  field_profile_email: mail
+  status: status
+  type:
+    plugin: default_value
+    default_value: osu_profile
+  # Profile OWNERSHIP falls back to uid 1: every profiled person migrates
+  # even when their account is outside mmi_users scope (agsci did the same).
+  uid:
+    - plugin: migration_lookup
+      migration: mmi_users
+      source: uid
+      no_stub: true
+    - plugin: default_value
+      default_value: 1
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: osu_profile
+
+migration_dependencies:
+  required:
+    - mmi_users

@@ -1,0 +1,92 @@
+langcode: en
+status: true
+id: mmi_profile_employee
+label: 'MMI profiles: osu_employee fields'
+migration_group: mmi_profiles
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Profiles'
+
+# The cas employee-address source flattens D7 building/location entities
+# into profile_address and department references into affiliation_names;
+# the MMI database carries the same profile-suite tables, so it runs
+# unchanged over the migrate_mmi key.
+#
+# functional_group is deliberately NOT mapped here: MMI roles become typed
+# lab memberships (mmi_membership_terms) in the groups section, not
+# field_profile_functional_group (that vocab holds agsci org groupings).
+source:
+  plugin: d7_osu_profile2_employee_address
+  profile2_type: osu_employee
+
+process:
+  nid:
+    - plugin: migration_lookup
+      migration: mmi_profiles
+      source: uid
+      no_stub: true
+    - plugin: skip_on_empty
+      method: row
+
+  field_profile_primary_title: position
+  field_profile_office_phone: phone_office
+  field_profile_alt_phone: phone_other
+  field_profile_fax: phone_fax
+
+  field_profile_address/country_code: profile_address/country_code
+  field_profile_address/administrative_area: profile_address/administrative_area
+  field_profile_address/locality: profile_address/locality
+  field_profile_address/postal_code: profile_address/postal_code
+  field_profile_address/address_line1: profile_address/address_line1
+  field_profile_address/address_line2: profile_address/address_line2
+
+  # Department names ("Marine Mammal Institute", the labs) join the shared
+  # osu_organization vocabulary by name, exactly as agsci affiliations did.
+  field_osu_organizations:
+    plugin: sub_process
+    source: affiliation_names
+    process:
+      target_id:
+        - plugin: entity_generate
+          entity_type: taxonomy_term
+          bundle_key: vid
+          bundle: osu_organization
+          value_key: name
+          ignore_case: true
+          source: name
+        - plugin: skip_on_empty
+          method: row
+
+  # D7 list keys match the D10 allowed values (03 = Hatfield Marine Science
+  # Center, where 67 of 68 MMI people are headquartered).
+  field_profile_headquarters:
+    - plugin: get
+      source: headquarters/0/value
+    - plugin: skip_on_empty
+      method: process
+
+  type:
+    plugin: default_value
+    default_value: osu_profile
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: osu_profile
+  overwrite_properties:
+    - field_profile_primary_title
+    - field_profile_office_phone
+    - field_profile_alt_phone
+    - field_profile_fax
+    - field_profile_address
+    - field_osu_organizations
+    - field_profile_headquarters
+
+migration_dependencies:
+  required:
+    - mmi_profiles
