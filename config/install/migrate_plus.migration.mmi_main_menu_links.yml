@@ -1,0 +1,71 @@
+langcode: en
+status: true
+id: mmi_main_menu_links
+label: 'MMI main menu -> Main group menu'
+migration_group: mmi_groups
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Groups'
+
+# The D7 site's main-menu (51 links) becomes the Main (MMI) group's menu --
+# the mmi domain's navigation, the same way agsci department domains
+# navigate through their group menus. Links to lab group nodes become
+# group/<id> paths; node links ride the offset; everything else (aliases,
+# external) resolves at render time. mlids are NOT preserved (they collide
+# with live menu_link_content ids); menu_link_parent resolves hierarchy
+# through this migration's own map.
+source:
+  plugin: menu_link
+  constants:
+    bundle: menu_link_content
+
+process:
+  _gate:
+    - plugin: static_map
+      source: menu_name
+      map:
+        main-menu: keep
+      default_value: ''
+    - plugin: skip_on_empty
+      method: row
+  bundle: constants/bundle
+  langcode:
+    plugin: default_value
+    default_value: en
+  title: link_title
+  description: description
+  menu_name:
+    plugin: mmi_group_menu_name
+    d7_group_nid: 1
+    source: menu_name
+  link/uri:
+    - plugin: mmi_menu_link_path
+      source: link_path
+    - plugin: link_uri
+      validate_route: false
+  link/options: options
+  external: external
+  weight: weight
+  expanded: expanded
+  enabled: enabled
+  parent:
+    plugin: menu_link_parent
+    source:
+      - plid
+      - '@menu_name'
+      - parent_link_path
+  changed: updated
+
+destination:
+  plugin: 'entity:menu_link_content'
+  no_stub: true
+
+migration_dependencies:
+  required:
+    - mmi_node_og_group

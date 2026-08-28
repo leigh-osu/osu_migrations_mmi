@@ -1,0 +1,49 @@
+langcode: en
+status: true
+id: mmi_group_content_publications
+label: 'MMI publications nodes into Group content'
+migration_group: mmi_groups
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Groups'
+source:
+  plugin: d7_og_membership_content
+  node_type:
+    - biblio
+process:
+  label: etid
+  # Relationship type id resolved via Group's storage handler (hashes past
+  # 32 chars), never hard-coded.
+  type:
+    plugin: cas_group_relationship_type_id
+    group_type: basic_group
+    relation_plugin: 'group_node:publications'
+  gid:
+    - plugin: migration_lookup
+      migration: mmi_node_og_group
+      no_stub: true
+      source: gid
+    - plugin: skip_on_empty
+      method: row
+      message: 'gid is missing'
+  entity_id:
+    - plugin: migration_lookup
+      migration:
+        - mmi_biblio
+      no_stub: true
+      source: etid
+    - plugin: skip_on_empty
+      method: row
+      message: 'node missing.'
+destination:
+  plugin: 'entity:group_content'
+migration_dependencies:
+  required:
+    - mmi_node_og_group
+    - mmi_biblio

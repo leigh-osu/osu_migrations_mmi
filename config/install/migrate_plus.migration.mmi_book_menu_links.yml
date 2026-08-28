@@ -1,0 +1,65 @@
+langcode: en
+status: true
+id: mmi_book_menu_links
+label: 'MMI book-toc menus -> group menus'
+migration_group: mmi_groups
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Groups'
+
+# D7 book navigation (134 links across 22 book-toc menus) lands in each
+# book's GROUP menu, following the agsci pattern -- but the group resolves
+# from the book's og_membership + the mmi_groups map (mmi_book_menu_name),
+# not the agsci plugin's title matching over raw nids. mlids are NOT
+# preserved.
+source:
+  plugin: book_toc_menu_link
+  constants:
+    bundle: menu_link_content
+
+process:
+  skip_translation:
+    plugin: skip_on_empty
+    method: row
+    source: skip_translation
+  bundle: constants/bundle
+  langcode:
+    plugin: default_value
+    default_value: en
+  title: link_title
+  description: description
+  menu_name:
+    plugin: mmi_book_menu_name
+    source: menu_name
+  link/uri:
+    - plugin: mmi_menu_link_path
+      source: link_path
+    - plugin: link_uri
+      validate_route: false
+  link/options: options
+  external: external
+  weight: weight
+  expanded: expanded
+  enabled: enabled
+  parent:
+    plugin: menu_link_parent
+    source:
+      - plid
+      - '@menu_name'
+      - parent_link_path
+  changed: updated
+
+destination:
+  plugin: 'entity:menu_link_content'
+  no_stub: true
+
+migration_dependencies:
+  required:
+    - mmi_node_og_group
+    - mmi_book

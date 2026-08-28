@@ -1,0 +1,201 @@
+langcode: en
+status: true
+id: mmi_node_og_group
+label: 'MMI OG group nodes -> Groups'
+migration_group: mmi_groups
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Groups'
+
+# The 15 MMI groups (12 labs + Main + About + CODEX) as basic_groups on the
+# mmi domain. UNLIKE the agsci run, group ids are NOT the D7 nids — live
+# groups already occupy that id space — so everything resolves through this
+# map. The basic_group type auto-creates each group's menu on save. Group
+# aliases ride here (mmi_url_alias skips group-node sources). D7-only
+# fields dropped by decision: field_group_type (Lab/Admin taxonomy,
+# informational), field_group_mission (6), field_group_image (6),
+# field_osu_branding, field_group_fax/flickr/google_plus, and the
+# make_a_gift pair (12+17 — D10 home still undecided, flagged).
+source:
+  plugin: d7_node
+  node_type: group
+
+process:
+  type:
+    plugin: default_value
+    default_value: basic_group
+  label:
+    - plugin: get
+      source: title
+    - plugin: callback
+      callable: trim
+  uid:
+    plugin: default_value
+    default_value: 1
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  # Display short name: curated forms of the D7 slugs; Main and About have
+  # no slug and fall back to the (trimmed) title, with Main renamed MMI --
+  # the header/breadcrumb lead with this field.
+  _short_display:
+    - plugin: extract
+      source: field_short_name
+      index:
+        - 0
+        - value
+      default: ''
+    - plugin: static_map
+      map:
+        wtg: WTG
+        ccgl: CCGL
+        pearl: PEARL
+        gemm-lab: 'GEMM Lab'
+        ommsn: OMMSN
+        btbel: BTBEL
+        whet: WHET
+        cantorlab: 'Cantor Lab'
+        mmbel: MMBEL
+        ocean-ecology: 'Ocean Ecology'
+        codex: CODEX
+        ecophysiology: Ecophysiology
+        blue-whale-skeleton: 'Blue Whale Skeleton'
+      default_value: null
+  field_group_short_name:
+    - plugin: null_coalesce
+      source:
+        - '@_short_display'
+        - title
+    - plugin: callback
+      callable: trim
+    - plugin: static_map
+      map:
+        Main: MMI
+      bypass: true
+
+  # Every group except Main sits under Main (the institute). D7 recorded a
+  # parent only on CODEX (via the parent_unit relic), but the labs' IA is
+  # the institute either way. Requires Main (D7 nid 1) to be imported first
+  # -- the runner imports --idlist=1 before the full run.
+  field_group_parent:
+    - plugin: static_map
+      source: nid
+      map:
+        1: 0
+      default_value: 1
+    - plugin: skip_on_empty
+      method: process
+    - plugin: migration_lookup
+      migration: mmi_node_og_group
+      no_stub: true
+    - plugin: skip_on_empty
+      method: process
+
+  # D7 field_global_nav=1 means "show in global navigation"; the D10 field
+  # is the inverse.
+  field_hide_global_navigation:
+    - plugin: extract
+      source: field_global_nav
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        1: 0
+        0: 1
+      default_value: 1
+
+  # Contact (D7 email stores its value in `email`, not `value`).
+  field_group_email:
+    plugin: sub_process
+    source: field_group_email
+    process:
+      value: email
+  field_group_phone: field_group_phone
+
+  field_group_location_name: field_group_location_name
+  field_group_location_address: field_group_location_address
+  field_group_location_city: field_group_location_city
+  field_group_location_state: field_group_location_state
+  field_group_location_zip: field_group_location_zip
+
+  field_group_facebook: field_group_facebook
+  field_group_twitter: field_group_twitter
+  field_group_linkedin: field_group_linkedin
+  field_group_youtube: field_group_youtube
+  field_group_instagram: field_group_instagram
+
+  field_group_hours:
+    plugin: sub_process
+    source: field_group_hours
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+  field_group_map:
+    plugin: sub_process
+    source: field_embedded_map
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  # The group's public face: anonymous visits to /group/X redirect to this
+  # node (AnonymousGroupRedirect) -- the lab's home book node, resolved by
+  # slug alias or book root; Main pins to the D7 front page.
+  field_group_home_page:
+    - plugin: mmi_group_home_page
+      source: nid
+    - plugin: skip_on_empty
+      method: process
+
+  # The D7 group alias (group/main, wtg, gemm-lab, ...) lands on the group
+  # entity itself.
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+  path/alias:
+    plugin: mmi_d7_alias
+    source: nid
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:group'
+
+migration_dependencies:
+  required:
+    - mmi_users
+  optional:
+    - mmi_media_images

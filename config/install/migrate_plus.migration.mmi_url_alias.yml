@@ -1,0 +1,50 @@
+langcode: en
+status: true
+id: mmi_url_alias
+label: 'MMI URL aliases'
+migration_group: mmi_support
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Support'
+
+# 8,677 D7 rows; mmi_alias_path resolves each source (node offset, user ->
+# profile node) and silently drops the 6,976 file/ and 25 taxonomy/ aliases
+# that have no D10 page. Aliases are GLOBAL on D10 (no domain column), so
+# mmi_skip_existing_alias skips-with-message any alias a live agsci page
+# already owns (6 in the 2026-08-28 survey) rather than shadowing it. pids
+# are not preserved.
+source:
+  plugin: d7_url_alias
+  constants:
+    slash: /
+
+process:
+  path:
+    plugin: mmi_alias_path
+    source: source
+  _alias:
+    plugin: concat
+    source:
+      - constants/slash
+      - alias
+  alias:
+    plugin: mmi_skip_existing_alias
+    source:
+      - '@_alias'
+      - '@path'
+  langcode:
+    plugin: default_value
+    default_value: en
+
+destination:
+  plugin: 'entity:path_alias'
+
+migration_dependencies:
+  required:
+    - mmi_profiles
