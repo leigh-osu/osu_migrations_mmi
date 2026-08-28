@@ -1,0 +1,116 @@
+langcode: en
+status: true
+id: mmi_feature_story
+label: 'MMI feature stories -> Story'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Clone of cas_feature_story_to_story minus the pieces MMI's type never had
+# (no tags field, no private media). 24 stories, 1 members-only.
+source:
+  plugin: d7_node
+  node_type: feature_story
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: story
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_osu_story_caption:
+    plugin: get
+    source: field_caption
+
+  field_osu_story_cover_image:
+    plugin: sub_process
+    source: field_picture
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration: mmi_media_images
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: process
+
+  field_osu_story_external_url:
+    plugin: sub_process
+    source: field_feature_story_alt_url
+    process:
+      uri: url
+      title: title
+
+  # Same convention as the agsci run: every migrated feature story carries
+  # the feature_story category so the listings find it, and the D7 "front"
+  # flag becomes the promote flag those listings filter on.
+  field_story_category:
+    plugin: default_value
+    default_value:
+      - value: feature_story
+  promote:
+    plugin: extract
+    source: field_feature_story_front
+    index:
+      - 0
+      - value
+    default: 0
+
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
+  field_group_private:
+    - plugin: extract
+      source: group_content_access
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        2: 1
+      default_value: 0
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: story
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_images

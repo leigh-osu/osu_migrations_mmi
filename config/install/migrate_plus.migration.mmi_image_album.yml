@@ -1,0 +1,81 @@
+langcode: en
+status: true
+id: mmi_image_album
+label: 'MMI image albums'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Clone of cas_image_album_to_image_album. 9 albums. As on agsci, the D7
+# viewfield fields (field_album_categories, field_album_view,
+# field_image_creator_owners) have no D10 equivalent and are skipped; MMI's
+# field_show_on_profile carries no data (0 rows).
+source:
+  plugin: d7_node
+  node_type: image_album
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: image_album
+
+  # D7 image_album had no body; the description lives in
+  # field_album_description (text_long).
+  body:
+    plugin: sub_process
+    source: field_album_description
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_image_album_images:
+    plugin: sub_process
+    source: field_album_image
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration: mmi_media_images
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: process
+
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: image_album
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_images

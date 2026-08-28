@@ -1,0 +1,97 @@
+langcode: en
+status: true
+id: mmi_feed
+label: 'MMI feed -> Live Feed (osu_live_feeds)'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Clone of cas_feed_to_feed. A single feed node. Like the agsci run, uid is
+# pinned to 1 rather than resolved (feed authorship is operational, not
+# editorial), and field_group_private is NOT mapped: the feed bundle does
+# not carry it.
+source:
+  plugin: d7_node
+  node_type: feed
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: feed
+  title:
+    - plugin: get
+      source: title
+    - plugin: callback
+      callable: trim
+  uid:
+    plugin: default_value
+    default_value: 1
+
+  field_feed_url/uri:
+    - plugin: extract
+      source: url
+      index:
+        - 0
+        - value
+      default: ''
+    - plugin: callback
+      callable: trim
+    - plugin: skip_on_empty
+      method: row
+      message: 'feed has no URL'
+    # Bare host names need a scheme to be a valid link URI.
+    - plugin: str_replace
+      regex: true
+      search: '~^(?![a-z][a-z0-9+.-]*://)~i'
+      replace: 'https://'
+  field_feed_items:
+    - plugin: extract
+      source: num_items
+      index:
+        - 0
+        - value
+      default: 5
+    - plugin: default_value
+      default_value: 5
+    - plugin: callback
+      callable: intval
+  field_feed_type:
+    - plugin: extract
+      source: feed_type
+      index:
+        - 0
+        - value
+      default: generic_parser
+    - plugin: default_value
+      default_value: generic_parser
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: feed
+
+migration_dependencies:
+  required:
+    - mmi_users

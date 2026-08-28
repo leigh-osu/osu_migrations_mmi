@@ -17,14 +17,16 @@ shared_configuration:
   process:
     # Cloned from migrate_plus.migration_group.content (the agsci group),
     # which preserves D7 ids verbatim. MMI cannot: 116 of its nids already
-    # exist as live D10 nodes, so nid and vid go through the fixed offset.
+    # exist as live D10 nodes, so nid goes through the fixed offset (live
+    # nids top out at ~302k, safely below the 400k band). Revision ids are
+    # NOT mapped: the live node_revision counter is already past 1.2M and
+    # post-launch agsci edits scattered >10k revision ids through the
+    # 400k-500k band, so offset vids collide — the destination assigns
+    # fresh vids and nothing downstream needs them to be deterministic
+    # (aliases/redirects/menus encode nids only).
     nid:
       - plugin: get
         source: nid
-      - plugin: mmi_nid_offset
-    vid:
-      - plugin: get
-        source: vid
       - plugin: mmi_nid_offset
     type: type
     langcode:

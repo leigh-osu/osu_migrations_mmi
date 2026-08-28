@@ -1,0 +1,211 @@
+langcode: en
+status: true
+id: mmi_biblio
+label: 'MMI biblio -> Publications'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# The agsci biblio pipeline (upgrade_d7_biblio_publication plus everything
+# osu_migrations_cas_migration_plugins_alter layered onto it) baked into one
+# config, minus the domain-table reads MMI does not have. nid/vid offset,
+# langcode repair, uid/revision resolution and the migrate_mmi key come from
+# the mmi_content group; the mmi_biblio_reference source supplies the node
+# columns those mappings read. 735 entries, all publicly visible in D7.
+source:
+  plugin: mmi_biblio_reference
+  high_water_property:
+    name: changed
+    alias: n
+
+process:
+  type:
+    plugin: default_value
+    default_value: publications
+
+  # The source resolves biblio_type to the D7 type NAME. entity_generate
+  # (not the agsci run's entity_lookup): the live publication_type vocab
+  # carries every MMI type except "Government Report" (1 entry), which is
+  # created on first use.
+  field_pub_type:
+    - plugin: entity_generate
+      source: biblio_type
+      entity_type: taxonomy_term
+      bundle_key: vid
+      bundle: publication_type
+      value_key: name
+
+  # Authors and editors become Publication Authors terms — one vocabulary
+  # shared with the agsci publications, so a person's term page collects
+  # everything they touched. The source splits contributors by auth_type and
+  # carries the D7 cid for the term lookup.
+  field_pub_authors:
+    - plugin: sub_process
+      source: author
+      process:
+        target_id:
+          - plugin: migration_lookup
+            migration: mmi_biblio_authors
+            source: cid
+            no_stub: true
+          - plugin: skip_on_empty
+            method: row
+  field_pub_editors:
+    - plugin: sub_process
+      source: editors
+      process:
+        target_id:
+          - plugin: migration_lookup
+            migration: mmi_biblio_authors
+            source: cid
+            no_stub: true
+          - plugin: skip_on_empty
+            method: row
+
+  field_pub_keywords:
+    - plugin: sub_process
+      source: keywords
+      process:
+        target_id:
+          - plugin: migration_lookup
+            migration: mmi_biblio_keywords
+            source: kid
+            no_stub: true
+          - plugin: skip_on_empty
+            method: row
+
+  # The node body: biblio_full_text is a flag; the real text is fetched by
+  # the source. Media tokens and hardcoded /sites/mmi7|mmi/files/ urls are
+  # repaired by mmi_media_wysiwyg_filter (+ the mmi_legacy_file_paths step
+  # the module alter appends after it).
+  body/value:
+    - plugin: mmi_media_wysiwyg_filter
+      source: body
+  body/format:
+    - plugin: default_value
+      default_value: full_html
+
+  field_pub_abstract/value: biblio_abst_e
+  field_pub_abstract/format:
+    - plugin: default_value
+      default_value: full_html
+  field_pub_issn: biblio_issn
+
+  # DOI hygiene copied from the agsci run: trim so whitespace-only counts as
+  # empty, skip when absent, strip any existing doi.org prefix before
+  # applying the canonical one.
+  field_pub_doi/title:
+    - plugin: callback
+      callable: trim
+      source: biblio_doi
+    - plugin: skip_on_empty
+      method: process
+  field_pub_doi/uri:
+    - plugin: callback
+      callable: trim
+      source: biblio_doi
+    - plugin: skip_on_empty
+      method: process
+    - plugin: str_replace
+      regex: true
+      search: '~^(?:https?://(?:dx\.)?doi\.org/)?(.+)$~i'
+      replace: 'https://dx.doi.org/$1'
+
+  field_pub_year_publication: biblio_year
+  field_pub_date_published/value:
+    - plugin: normalize_biblio_date
+      source: biblio_date
+  field_pub_issue: biblio_issue
+  field_pub_volume: biblio_volume
+  field_pub_pages: biblio_pages
+  field_pub_publisher: biblio_publisher
+
+  field_pub_url/uri:
+    - plugin: callback
+      callable: trim
+      source: biblio_url
+    - plugin: skip_on_empty
+      method: process
+    # Bare host names need a scheme to be a valid link URI.
+    - plugin: str_replace
+      regex: true
+      search: '~^(?![a-z][a-z0-9+.-]*://)~i'
+      replace: 'http://'
+  # D7 editors typed citation-style punctuation into these ("London :");
+  # strip the trailing separators.
+  field_pub_isbn:
+    - plugin: callback
+      callable: trim
+      source: biblio_isbn
+    - plugin: skip_on_empty
+      method: process
+    - plugin: str_replace
+      regex: true
+      search: '~[\s:;,.]+$~'
+      replace: ''
+  field_pub_publisher_city:
+    - plugin: callback
+      callable: trim
+      source: biblio_place_published
+    - plugin: skip_on_empty
+      method: process
+    - plugin: str_replace
+      regex: true
+      search: '~[\s:;,.]+$~'
+      replace: ''
+
+  # biblio_secondary_title is the journal for articles but the book title
+  # for chapters and the series for books/reports; the cas plugin routes it
+  # by type name.
+  field_pub_journal:
+    - plugin: cas_biblio_secondary_title
+      source:
+        - biblio_type
+        - biblio_secondary_title
+      target: journal
+  field_pub_book_title:
+    - plugin: cas_biblio_secondary_title
+      source:
+        - biblio_type
+        - biblio_secondary_title
+      target: book
+  field_pub_series_title:
+    - plugin: cas_biblio_secondary_title
+      source:
+        - biblio_type
+        - biblio_secondary_title
+      target: series
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: publications
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_biblio_authors
+    - mmi_biblio_keywords
+  optional:
+    - mmi_media_images
+    - mmi_media_documents

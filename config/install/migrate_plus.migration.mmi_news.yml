@@ -1,0 +1,225 @@
+langcode: en
+status: true
+id: mmi_news
+label: 'MMI news -> Story'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# MMI's news type has no agsci twin; the closest analog is agsci's article
+# -> story mapping, whose conventions this follows. 417 items, mostly press
+# coverage: 387 carry an external URL. Type-diff decisions (2026-08-27):
+# field_source (free-text outlet name) joins the shared publisher
+# vocabulary; the Stranding flag (42 nodes) becomes a story_tags term so a
+# stranding-news listing can find them.
+source:
+  plugin: d7_node
+  node_type: news
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: story
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_osu_story_caption:
+    plugin: get
+    source: field_news_caption
+
+  # Thumbnails are multi-valued in D7 (46 images on 35 nodes) but the story
+  # cover holds one: delta 0 becomes the cover, the rest join the file
+  # uploads (2 PDFs) in field_story_media.
+  field_osu_story_cover_image/target_id:
+    - plugin: extract
+      source: field_news_thumbnail
+      index:
+        - 0
+        - fid
+      default: ''
+    - plugin: skip_on_empty
+      method: process
+    - plugin: migration_lookup
+      migration: mmi_media_images
+      no_stub: true
+    - plugin: skip_on_empty
+      method: process
+  _extra_thumbnails:
+    - plugin: get
+      source: field_news_thumbnail
+    - plugin: mmi_array_slice
+      offset: 1
+  _story_files:
+    plugin: merge
+    source:
+      - '@_extra_thumbnails'
+      - field_file_upload
+  field_story_media:
+    plugin: sub_process
+    source: '@_story_files'
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration:
+            - mmi_media_images
+            - mmi_media_documents
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: process
+
+  field_osu_story_external_url:
+    plugin: sub_process
+    source: field_external_url
+    process:
+      uri: url
+      title: title
+
+  # Press coverage links out; the category keys the story listings' internal
+  # vs external treatment (agsci convention).
+  _external:
+    - plugin: extract
+      source: field_external_url
+      index:
+        - 0
+        - url
+      default: ''
+    - plugin: callback
+      callable: trim
+  field_story_category:
+    - plugin: get
+      source: '@_external'
+    - plugin: callback
+      callable: boolval
+    - plugin: callback
+      callable: intval
+    - plugin: static_map
+      map:
+        0: story_internal
+        1: story_external
+
+  # D7 datetime ('Y-m-d H:i:s') -> date-only storage; the 66 undated items
+  # fall back to the node creation date so date-sorted listings keep them.
+  _publication_date:
+    - plugin: extract
+      source: field_publication_date
+      index:
+        - 0
+        - value
+      default: ''
+    - plugin: skip_on_empty
+      method: process
+    - plugin: format_date
+      from_format: 'Y-m-d H:i:s'
+      to_format: 'Y-m-d'
+  _created_date:
+    - plugin: format_date
+      source: created
+      from_format: U
+      to_format: 'Y-m-d'
+  field_story_publish_date:
+    - plugin: null_coalesce
+      source:
+        - '@_publication_date'
+        - '@_created_date'
+
+  # Free-text outlet name -> shared publisher vocabulary (628 live terms;
+  # matches adopt, new outlets are created).
+  field_tax_publisher:
+    - plugin: extract
+      source: field_source
+      index:
+        - 0
+        - value
+      default: ''
+    - plugin: callback
+      callable: trim
+    - plugin: skip_on_empty
+      method: process
+    - plugin: entity_generate
+      entity_type: taxonomy_term
+      bundle_key: vid
+      bundle: publisher
+      value_key: name
+
+  # D7 "Stranding" flag -> a story_tags term, named for the shared agsci
+  # vocabulary it lands in.
+  field_tax_story_tags:
+    - plugin: extract
+      source: field_mmi_stranding
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        1: 'Marine Mammal Stranding'
+      default_value: ''
+    - plugin: skip_on_empty
+      method: process
+    - plugin: entity_generate
+      entity_type: taxonomy_term
+      bundle_key: vid
+      bundle: story_tags
+      value_key: name
+
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
+  # OG content visibility: 17 of 417 news items are members-only in D7.
+  field_group_private:
+    - plugin: extract
+      source: group_content_access
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        2: 1
+      default_value: 0
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: story
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_images
+  optional:
+    - mmi_media_documents

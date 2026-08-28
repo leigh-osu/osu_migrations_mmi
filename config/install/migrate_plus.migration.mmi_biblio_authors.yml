@@ -1,0 +1,37 @@
+langcode: en
+status: true
+id: mmi_biblio_authors
+label: 'MMI biblio contributors -> Publication Authors terms'
+migration_group: mmi_support
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Support'
+
+# Same shape as agsci's cas_biblio_authors (the source plugin is reused; it
+# reads over the group's migrate_mmi key): one term per distinct credited
+# person, authors and editors alike, keyed by cid for the mmi_biblio lookups.
+# The vocabulary is SHARED with the agsci publications: 292 of the 2,700 MMI
+# contributors already have a term, and scripts-dev/mmi_preseed_biblio_terms.php
+# pre-seeds those cids onto the live tids (ROLLBACK_PRESERVE) so a person's
+# term page keeps collecting everything they touched. Only unmatched names
+# create new terms.
+source:
+  plugin: cas_biblio_authors
+process:
+  name:
+    - plugin: callback
+      callable: trim
+      source: name
+    - plugin: skip_on_empty
+      method: row
+  vid:
+    - plugin: default_value
+      default_value: publication_authors
+destination:
+  plugin: 'entity:taxonomy_term'

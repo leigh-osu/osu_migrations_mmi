@@ -1,0 +1,32 @@
+langcode: en
+status: true
+id: mmi_biblio_keywords
+label: 'MMI biblio keywords -> Publication Keywords terms'
+migration_group: mmi_support
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Support'
+
+# agsci's cas_biblio_keywords over the migrate_mmi key. Shared vocabulary:
+# 7 of the 47 MMI keywords already exist and are pre-seeded onto the live
+# tids by scripts-dev/mmi_preseed_biblio_terms.php (ROLLBACK_PRESERVE).
+source:
+  plugin: cas_biblio_keywords
+process:
+  name:
+    - plugin: callback
+      callable: trim
+      source: word
+    - plugin: skip_on_empty
+      method: row
+  vid:
+    - plugin: default_value
+      default_value: publication_keywords
+destination:
+  plugin: 'entity:taxonomy_term'

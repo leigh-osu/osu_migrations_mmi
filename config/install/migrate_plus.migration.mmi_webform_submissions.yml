@@ -1,0 +1,66 @@
+langcode: en
+status: true
+id: mmi_webform_submissions
+label: 'MMI webform submissions'
+migration_group: mmi_support
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Support'
+
+# Clone of webform_migrate's d7_webform_submission over the MMI source
+# (lowercased data keys + fid remap through the mmi file maps, webform_id
+# and uri in the offset namespace). 5,549 submissions — mostly the license
+# plate terms form (5,225) and the stranding reports (159, whose photo
+# uploads ride mmi_files / mmi_files_private). sids are offset like nids:
+# the live install already holds agsci submissions up to sid ~234k.
+source:
+  plugin: mmi_d7_webform_submission
+
+process:
+  sid:
+    - plugin: get
+      source: sid
+    - plugin: mmi_nid_offset
+  webform_id: webform_id
+  uri: webform_uri
+  created: submitted
+  completed: submitted
+  changed: submitted
+  in_draft: is_draft
+  remote_addr: remote_addr
+  # Most submitters are anonymous; authenticated ones resolve through the
+  # ONID map and fall back to anonymous, never to an admin account.
+  uid:
+    - plugin: migration_lookup
+      migration: mmi_users
+      source: uid
+      no_stub: true
+    - plugin: default_value
+      default_value: 0
+  langcode:
+    plugin: default_value
+    default_value: en
+  entity_type:
+    plugin: default_value
+    default_value: node
+  entity_id:
+    - plugin: get
+      source: nid
+    - plugin: mmi_nid_offset
+  data: webform_data
+
+destination:
+  plugin: 'entity:webform_submission'
+
+migration_dependencies:
+  required:
+    - mmi_webform
+    - mmi_webform_node
+    - mmi_files
+    - mmi_files_private

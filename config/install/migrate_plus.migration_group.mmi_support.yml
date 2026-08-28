@@ -1,0 +1,14 @@
+langcode: en
+status: true
+id: mmi_support
+label: 'MMI Supporting Entities'
+description: 'Non-node entities the MMI node migrations depend on: the biblio author/keyword term dictionaries and the webform config entities + submissions. Shares only the migrate_mmi source key; ids and destinations are per-migration.'
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+source_type: 'Drupal 7'
+module: null
+shared_configuration:
+  source:
+    key: migrate_mmi

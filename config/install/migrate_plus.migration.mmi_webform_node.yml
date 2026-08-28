@@ -1,0 +1,94 @@
+langcode: en
+status: true
+id: mmi_webform_node
+label: 'MMI webform nodes'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Clone of cas_webform_to_webform_node against the mmi_webform map. 4 nodes,
+# 1 members-only, 1 closed form.
+source:
+  plugin: d7_node
+  node_type: webform
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: webform
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  # mmi_webform keys its map by the D7 node id, so the lookup wires each
+  # node to its own form; skip_on_empty guards the property, not the row.
+  webform/target_id:
+    - plugin: migration_lookup
+      migration: mmi_webform
+      no_stub: true
+      source: nid
+    - plugin: skip_on_empty
+      method: process
+
+  # Field-level status overrides the webform entity status on the node and
+  # D7 has no per-node equivalent — mirror the entity status so the closed
+  # form stays closed (cas plugin; it reads the migrated D10 entity).
+  webform/status:
+    - plugin: migration_lookup
+      migration: mmi_webform
+      no_stub: true
+      source: nid
+    - plugin: cas_webform_node_status
+
+  field_group_private:
+    - plugin: extract
+      source: group_content_access
+      index:
+        - 0
+        - value
+      default: 0
+    - plugin: static_map
+      map:
+        2: 1
+      default_value: 0
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: webform
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_webform

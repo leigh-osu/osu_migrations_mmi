@@ -1,0 +1,86 @@
+langcode: en
+status: true
+id: mmi_video
+label: 'MMI videos'
+migration_group: mmi_content
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Content'
+
+# Clone of cas_video_to_video without the agsci-only fields (taxonomies,
+# presenter/affiliation, show-on-profile — MMI's type has none of them).
+# 5 videos: 4 youtube://, 1 mediaspace://; each scheme has its own media
+# migration and the lookup takes the first match.
+source:
+  plugin: d7_node
+  node_type: video
+  high_water_property:
+    name: changed
+
+process:
+  type:
+    plugin: default_value
+    default_value: video
+
+  body:
+    plugin: sub_process
+    source: body
+    process:
+      value:
+        plugin: mmi_media_wysiwyg_filter
+        source: value
+      summary: summary
+      format:
+        plugin: default_value
+        default_value: full_html
+
+  field_vid_video:
+    plugin: sub_process
+    source: field_video
+    process:
+      target_id:
+        - plugin: migration_lookup
+          migration:
+            - mmi_media_remote_video
+            - mmi_media_kaltura
+            - mmi_media_local_video
+          source: fid
+          no_stub: true
+        - plugin: skip_on_empty
+          method: process
+
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
+  path/pathauto:
+    plugin: default_value
+    default_value: 0
+
+  field_domain_access:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_source:
+    plugin: default_value
+    default_value: mmi_oregonstate_edu
+  field_domain_all_affiliates:
+    plugin: default_value
+    default_value: 0
+
+destination:
+  plugin: 'entity:node'
+  default_bundle: video
+
+migration_dependencies:
+  required:
+    - mmi_users
+    - mmi_media_remote_video
+    - mmi_media_kaltura
+  optional:
+    - mmi_media_local_video

@@ -142,6 +142,13 @@ process:
         2: 1
       default_value: 0
 
+  # MMI carries D7 metatag rows (6,853 site-wide); the metatag module
+  # populates pseudo_metatag_entities per row from the migration's own
+  # source connection.
+  field_meta_tags:
+    - plugin: d7_metatag_entities
+      source: pseudo_metatag_entities
+
   # Aliases are migrated by the offset alias pipeline, not pathauto.
   path/pathauto:
     plugin: default_value

@@ -1,0 +1,70 @@
+langcode: en
+status: true
+id: mmi_files_private
+label: 'MMI private files (webform submission uploads)'
+migration_group: mmi_media
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+  - 'MMI Media'
+
+# 13 private files: 12 webform stranding-report uploads referenced by
+# migrated submissions (mmi_webform_submissions remaps their fids through
+# this map) plus one unreferenced image. No media entities wrap these —
+# they exist only so submission file answers keep resolving. Destination
+# uris are kept verbatim; none exist on the live site (checked 2026-08-28).
+#
+# The mmi site's private path (sites/mmi7/files-private) is settings.php
+# config, absent from the D7 variable table — and the platform's patched
+# d7_file source nulls file_private_path anyway — so the source path is
+# built from the uri here instead of from the source's filepath property.
+source:
+  plugin: d7_file
+  scheme: private
+  constants:
+    source_base_path: '/var/www/d7'
+
+process:
+  filename: filename
+  source_rel:
+    - plugin: str_replace
+      source: uri
+      search: 'private://'
+      replace: 'sites/mmi7/files-private/'
+  source_full_path:
+    - plugin: concat
+      delimiter: /
+      source:
+        - constants/source_base_path
+        - '@source_rel'
+    - plugin: urlencode
+  uri:
+    plugin: file_copy
+    source:
+      - '@source_full_path'
+      - uri
+  filemime: filemime
+  status: status
+  created: timestamp
+  changed: timestamp
+  # Submitters are anonymous or unmapped; ownership is cosmetic (same
+  # fallback as mmi_files).
+  uid:
+    - plugin: migration_lookup
+      migration: mmi_users
+      source: uid
+      no_stub: true
+    - plugin: default_value
+      default_value: 1
+
+destination:
+  plugin: 'entity:file'
+
+migration_dependencies:
+  required:
+    - mmi_users
