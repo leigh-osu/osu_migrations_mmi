@@ -21,7 +21,9 @@ migration_tags:
 # fields dropped by decision: field_group_type (Lab/Admin taxonomy,
 # informational), field_group_mission (6), field_group_image (6),
 # field_osu_branding, field_group_fax/flickr/google_plus, and the
-# make_a_gift pair (12+17 — D10 home still undecided, flagged).
+# make_a_gift pair (dropped entirely 2026-08-30: the campaignforosu.org
+# widget host is dead, the sidebar blocks render nothing on live D7, and
+# the working gift path is the global menu link).
 source:
   plugin: d7_node
   node_type: group
@@ -30,11 +32,17 @@ process:
   type:
     plugin: default_value
     default_value: basic_group
+  # D7's institute-wide group was titled just "Main"; give it the real name
+  # (its short name is already MMI below).
   label:
     - plugin: get
       source: title
     - plugin: callback
       callable: trim
+    - plugin: static_map
+      map:
+        Main: 'Marine Mammal Institute'
+      bypass: true
   uid:
     plugin: default_value
     default_value: 1
@@ -172,14 +180,19 @@ process:
     - plugin: skip_on_empty
       method: process
 
-  # The D7 group alias (group/main, wtg, gemm-lab, ...) lands on the group
-  # entity itself.
+  # The D7 group alias (wtg, gemm-lab, ...) lands on the group entity
+  # itself; the institute group takes /group/mmi (matching its short name)
+  # instead of D7's group/main.
   path/pathauto:
     plugin: default_value
     default_value: 0
   path/alias:
-    plugin: mmi_d7_alias
-    source: nid
+    - plugin: mmi_d7_alias
+      source: nid
+    - plugin: static_map
+      map:
+        /group/main: /group/mmi
+      bypass: true
 
   field_domain_access:
     plugin: default_value

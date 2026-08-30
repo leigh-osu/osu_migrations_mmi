@@ -1,0 +1,31 @@
+langcode: en
+status: true
+id: mmi_media_caption_seed
+label: 'MMI: seed field_media_caption from image alt/title'
+# `default` group for the same reasons as mmi_media_alt_backfill, which must
+# run first (the caption reads the just-backfilled alt/title).
+migration_group: default
+dependencies:
+  enforced:
+    module:
+      - osu_migrations_mmi
+migration_tags:
+  - 'Drupal 7'
+  - OSU
+  - MMI
+
+source:
+  plugin: mmi_media_caption_seed
+
+process:
+  # The source only yields media with an empty caption and a usable alt/title.
+  mid: mid
+  field_media_caption: caption
+
+destination:
+  plugin: 'entity:media'
+  default_bundle: image
+
+migration_dependencies:
+  required:
+    - mmi_media_alt_backfill

@@ -22,9 +22,18 @@ source:
     source_base_path: '/var/www/d7'
 
 process:
+  # cas_clean_youtube_url trims youtube://v/<id>/l/<playlist> junk that
+  # would otherwise 400 at YouTube's oEmbed endpoint (3 of the 42 rows).
+  # One row is playlist-only (youtube://l/<id>, no video), which
+  # media_remote_video passes through untouched; str_replace turns it into
+  # the playlist URL, which YouTube oEmbed accepts.
   field_media_oembed_video:
     - plugin: media_remote_video
       source: uri
+    - plugin: str_replace
+      search: 'youtube://l/'
+      replace: 'https://www.youtube.com/playlist?list='
+    - plugin: cas_clean_youtube_url
   status: status
   created: timestamp
   changed: timestamp

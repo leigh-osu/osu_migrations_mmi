@@ -68,12 +68,14 @@ class MmiAliasPath extends ProcessPluginBase implements ContainerFactoryPluginIn
     if (preg_match('~^node/(\d+)$~', $source, $m)) {
       if ($this->nonNodeNids === NULL) {
         $this->nonNodeNids = array_map('intval', \Drupal\Core\Database\Database::getConnection('default', 'migrate_mmi')
-          ->query("SELECT nid FROM {node} WHERE type IN ('group', 'parent_unit')")
+          ->query("SELECT nid FROM {node} WHERE type IN ('group', 'parent_unit', 'navigation_grid', 'expedition', 'highlight')")
           ->fetchCol());
       }
       if (in_array((int) $m[1], $this->nonNodeNids, TRUE)) {
-        // Group entity aliases are set by mmi_groups; parent_unit is not
-        // migrated at all.
+        // Group entity aliases are set by mmi_groups; the other types are
+        // not migrated (nav grids and the expedition dropped by decision,
+        // highlights hand-built as blocks), so an offset alias would point
+        // at a node that never exists.
         throw new MigrateSkipRowException();
       }
       return '/node/' . ((int) $m[1] + MmiNidOffset::OFFSET);
