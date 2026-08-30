@@ -87,11 +87,17 @@ process:
         - plugin: skip_on_empty
           method: process
 
+  # mmi_external_url normalizes the six non-URL values D7's link field let
+  # through (internal node links, file paths, one pasted headline).
   field_osu_story_external_url:
     plugin: sub_process
     source: field_external_url
     process:
-      uri: url
+      uri:
+        - plugin: mmi_external_url
+          source: url
+        - plugin: skip_on_empty
+          method: row
       title: title
 
   # Press coverage links out; the category keys the story listings' internal
